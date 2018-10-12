@@ -1,4 +1,4 @@
-## Steganography
+# Steganography
 Simple steganography tool for embedding data into image matrices.
 
 ## Description
@@ -9,18 +9,19 @@ into an image without any significant change in the image itself. (Apart from th
 A quick run of this python script should do the job provided the paths (relative or real) to the target image to modify
 and the data which is to be embedded.
 
-### Embedding the data into image :-
+##### Embedding the data into image :-
 ```
 $ chmod +x enc.py
 $ ./enc.py [path_to_carrier_image] [path_to_data]
 
 // Example: ./enc.py [image.jpg] [audio.aiff]
-// Where: image.jpg is the image which will carry the data , and the data would be the audio.aiff file.
+// Where: image.jpg is the image which will carry the data , 
+// and the data would be the audio.aiff file.
 ```
 >Note: Running this on an image will not modify the image with data itself but will create a new image named 
 *secret.png* which will then be read by the decrypter so the data could be extracted from it.
 
-### Extracting data from the image :-
+##### Extracting data from the image :-
 ```
 $ chmod +x dec.py
 $ ./dec.py
