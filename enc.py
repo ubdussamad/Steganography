@@ -35,6 +35,11 @@ with open(path_string,'rb') as f_obj:
 	file_data = f_obj.read()
 
 print("The amount of data you can store in this image is: %d KiBs"%((x*y*z)/(1024*8)))
+if ((len(file_data)+50) > ((x*y*z)//8) ):
+	print("File Too Large to be stored in this Image.")
+	print("Please run a bigger Image.")
+	raise MemoryError
+
 print("The size of the file is: %d Bytes"%len(file_data))
 print("Start byte:%d, Mid byte: %d End byte: %d"%(file_data[0],file_data[1] , file_data[-1]))
 
