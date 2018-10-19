@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+
+'''-------------------------------------------------------------
+* Pixel Wise Image Modification cum Encryption Utility.
+* (Embeds String data into an image.)
+* 07OCT2018
+* Authors: Mohamed S. Haque <ubdussamad@gmail.com>
+* Primarily Built around Python3.x
+*
+* Usage:
+* user@machine~$ ./enc.py [path_to_image_which_will_store_data] [path_to_file_which_is_to_be_enclosed]
+* The output Image will be saved as secret.png in the same directory as this file.
+*
+* This program currently utilizes an even odd scheme to store/read binary data into/from an image.
+*
+* Working Principle:
+* Reads a Portable Network Graphic (.png) and converts it to a 2D array.
+* An odd color value %5represents binary 0 and an even color value represents binary 1.
+* Primarily color values in the image's matrix are converted into odd integer by adding
+* integer value 1 if the color value is even else 0 if the color value is already odd.
+*
+* Scheme: Odd if 0 , even if 1
+------------------------------------------------------------------------------------------'''
+from PIL import Image
+import numpy as np
+import math,sys,gi,os
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+try:
+        import macutils
+except:
+        pass
+
+class encrypter(object):
+        def __init__(self):
+                self.medium_path = ''
+                self.target_path = ''
+                self.medium_arr = []
+                self.target_arr = []
+                self.dim = []
+                self.reserved_bit_width = 0
+                
+        def load_medium(self,path): #Loads the medium's path into the header
+                self.medium_path = path
+
+        def load_target(self,path): #Loads the target's path into the header
+                self.target_path = path
+
+        def assert_storage(self): # Checks weather the target would fit inside the medium or not
+                if len(self.target_arr):
+                        if (( self.fetch_target_size()+50) > ((self.dim[0]*self.dim[1]*3)//8) ):
+                                print('''General Memory Exception/nTarget File is larger than the storage capacity of medium.''')
+                                return(1)
+                return(0)
+
+        def read_medium(self): #Reads the medium from the file and converts it into array for further processing.
+                file = Image.open(self.medium_path)
+                self.medium_arr = np.array(file) #Converting the Image into a 2D array
+                file.close()
+                self.dim  = np.shape(self.medium_arr) #Reading the dimensions of the array to determine the storage.
+                self.medium_arr |= 1 #Making every value in the matrix odd
+                self.reserved_bit_width =  math.ceil(math.log((self.dim[0]*self.dim[1]*3)/8 , 2))
+
+        def read_target(self): #Reads the target from file and converts it into raw byte
+                with open( self.target_path , 'rb' ) as file_object:
+                        self.target_arr = file_object.read()
+
+        def fetch_storage(self): #Returns Storage capacity of the image in kilobytes.
+                return(((self.dim[0]*self.dim[1]*3)/(1024*8)))
+
+        def fetch_target_size(self): #Returns the bytes size of the target file.
+                return( len(self.target_arr))
+
+        def encrypt(self):
+                print("Processing and Saving file.")
+                long_array = np.array([ int(i) for i in format(self.fetch_target_size() , '#0%db'%(self.reserved_bit_width+2) )[2:] ])
+                long_array = np.concatenate( ( long_array , np.unpackbits(bytearray(self.target_arr)) ) , axis = 0 )
+                self.medium_arr.ravel()[:len(long_array)] -= np.array(long_array, self.medium_arr.dtype)
+                assert( not(  (len(long_array) - self.reserved_bit_width )%8 ) )
+                final = Image.fromarray(self.medium_arr) #Recreating the image from the modified array.
+                final.save("secret.png") #Saving the Image for transfer or future use. Note: The output picture must be in PNG format
+                print("Finished Rendering image!")
+
+def procedure():
+        z = encrypter()
+        z.load_medium("medium.jpg")
+        z.load_target("data.mp4")
+        z.read_medium()
+        z.read_target()
+        z.assert_storage()
+        z.encrypt()
+
+class MyWindow(Gtk.Window):
+        def __init__(self):
+                Gtk.Window.__init__(self, title="Yellow Helicopters are lonely")
+                self.set_border_width(10)
+                self.listbox = Gtk.ListBox()
+                self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
+                self.add(self.listbox)
+                self.set_default_size(600,600)
+                self.set_resizable(False)
+                self.paths = [0,0]
+                self.labels()
+
+        def labels(self):
+                self.label1 = Gtk.Label()
+                self.label1.set_markup("<b>Pixel Wise Image Modification cum Encryption Utility.</b>")
+                self.listbox.add(self.label1)
+                
+                self.label2 = Gtk.Label("\nPlease select the image to be used as carrier:\n")
+                self.listbox.add(self.label2)
+                self.button1 = Gtk.Button("Choose Image")
+                self.button1.connect("clicked", self.file_chooser)
+                self.listbox.add(self.button1)
+                
+                self.label3 = Gtk.Label("\n\nPlease select the target file to be stored:\n")
+                self.listbox.add(self.label3)
+                
+                self.button2 = Gtk.Button("Choose File")
+                self.button2.connect("clicked", lambda x: self.file_chooser(fltr=0))
+                self.listbox.add(self.button2)
+
+                self.label4 = Gtk.Label()
+                self.label4.set_markup("\n<i>Select both files and click render.</i>\n")
+                self.listbox.add(self.label4)
+                
+                self.button2 = Gtk.Button("Render")
+                self.button2.connect("clicked", self.render)
+                self.button2.set_property("width-request", 20)
+                self.button2.set_property("height-request", 15)
+                self.listbox.add(self.button2)
+
+                self.label1 = Gtk.Label()
+                self.label1.set_markup("<i>Nothing to render.</i>")
+                self.listbox.add(self.label1)
+
+        def render(self,args):
+                if not(all(self.paths)):
+                        self.label1.set_markup("<b>Status: </b><span foreground=\"#893d3d\">Select both files first.</span>")
+                        return(-1)
+                #print(self.paths) # 0->data , 1->Image
+                z = encrypter()
+                z.load_medium(self.paths[1])
+                z.load_target(self.paths[0])
+                z.read_medium()
+                z.read_target()
+                if z.assert_storage():
+                        #Suit for Memory Exception
+                        self.label1.set_markup("<b>Status: </b><span foreground=\"#893d3d\">Target Way too big for carrier.</span>")
+                else:
+                        self.label1.set_markup("<b>Status: </b><span foreground=\"#126875\"><i>Rendering, Please wait...</i></span>")
+                        z.encrypt()
+                        self.label1.set_markup("<b>Status: </b><span foreground=\"#295624\"><i>Rendering Complete.</i></span>")
+                
+        def file_chooser(self,button='',fltr=1):
+                dialog = Gtk.FileChooserDialog("Please Choose file", self,Gtk.FileChooserAction.OPEN,
+                                               (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+                dialog.set_default_response(Gtk.ResponseType.OK)
+                mfilter = Gtk.FileFilter()
+                mfilter.set_name(("Images"))
+                mfilter.add_mime_type("image/png")
+                mfilter.add_mime_type("image/jpeg")
+                mfilter.add_mime_type("image/gif")
+                mfilter.add_pattern("*.[pP][nN][gG]")
+                mfilter.add_pattern("*.[jJ][pP][eE]?[gG]")
+                mfilter.add_pattern("*.[gG][iI][fF]")
+                mfilter.add_pattern("*.[tT][iI][fF]{1,2}")
+                mfilter.add_pattern("*.[xX][pP][mM]")
+                if fltr:
+                        dialog.add_filter(mfilter)
+                response = dialog.run()
+                if response ==  Gtk.ResponseType.OK:
+                        filename = dialog.get_filename()
+                        if fltr:
+                                self.label2.set_markup("\n<i>Chosen Image: </i><b><i>%s</i></b>" % (filename.split("/")[-1] ))
+                                self.label2.set_max_width_chars(50)
+                        else:
+                                self.label3.set_markup("\n<i>Chosen File: </i><b><i>%s</i></b>" % (filename.split("/")[-1] ))
+                                self.label3.set_max_width_chars(50)
+                elif response == Gtk.ResponseType.CANCEL:filename = None
+                else:return False
+                path = dialog.get_current_folder()
+                dialog.destroy()
+                print(filename)
+                self.paths[fltr] = filename
+                if all(self.paths):
+                        self.label1.set_markup("<b>Status: </b><span foreground=\"#126875\"><i>Something to render.</i></span>")
+                
+                return(0)
+                
+
+win = MyWindow()
+win.connect("destroy", Gtk.main_quit)
+win.show_all()
+Gtk.main()
