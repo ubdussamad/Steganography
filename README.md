@@ -5,9 +5,14 @@ Simple steganography tool for embedding data into image matrices.
 This tools embeds any piece of data may it be a audio,video or a binary executable
 into an image without any significant change in the image itself. (Apart from the image becoming a little brighter)
 
+## Dependencies
+1. Numpy can be installed by `pip install numpy`
+2. Pillow can be installed by `pip install pillow` 
+
 ## Usage
 A quick run of this python script should do the job provided the paths (relative or real) to the target image to modify
 and the data which is to be embedded.
+
 
 ##### Embedding the data into image :-
 ```
