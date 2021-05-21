@@ -29,7 +29,7 @@ import math,sys
 storage_path,path_string = sys.argv[1:3]
 arr = np.array(Image.open(storage_path)) #Converting the Image into a 2D array
 x,y,z  = np.shape(arr) #Reading the dimensions of the array to determine the storage.
-arr |= 1 #Making every value in the matrix odd
+arr |= 1 #Making every value in the matrix odd (This only works with integer values. Fp dosen't works that way for this trick to work.)
 reserved_bit_width =  math.ceil(math.log2((x*y*3)/8))
 with open(path_string,'rb') as f_obj:
 	file_data = f_obj.read()
